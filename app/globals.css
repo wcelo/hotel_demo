@@ -1,0 +1,202 @@
+:root {
+  /* Boutique hotel: warm ink base + champagne gold */
+  --bg-deep: #0a0908;
+  --bg-mid: #141210;
+  --panel: rgba(28, 26, 22, 0.72);
+  --panel-border: rgba(212, 175, 120, 0.14);
+  --text: #f4efe6;
+  --muted: #a39a8e;
+  --gold: #d4af78;
+  --gold-soft: rgba(212, 175, 120, 0.22);
+  --accent: linear-gradient(145deg, #e8c992 0%, #c9a05f 48%, #a67c3d 100%);
+  --accent-text: #1a1510;
+  --danger: #c45c5c;
+  --danger-soft: rgba(196, 92, 92, 0.18);
+  --ring: rgba(212, 175, 120, 0.35);
+  --log-bg: #0c0b09;
+  --log-border: rgba(212, 175, 120, 0.1);
+  --log-text: #c8b8a4;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  color: var(--text);
+  background-color: var(--bg-deep);
+  background-image:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(90, 72, 48, 0.35), transparent 55%),
+    radial-gradient(ellipse 90% 60% at 100% 0%, rgba(60, 48, 36, 0.25), transparent 45%),
+    linear-gradient(180deg, var(--bg-mid) 0%, var(--bg-deep) 42%, #050504 100%);
+  background-attachment: fixed;
+}
+
+main {
+  max-width: 840px;
+  margin: 0 auto;
+  padding: 3.5rem 1.5rem;
+}
+
+h1 {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: clamp(1.95rem, 4.2vw, 2.55rem);
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: 0.01em;
+  color: var(--text);
+  text-shadow: 0 1px 24px rgba(0, 0, 0, 0.35);
+}
+
+p.lead {
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.75;
+  max-width: 62ch;
+  font-size: 1.02rem;
+  font-weight: 400;
+}
+
+.hero {
+  margin-bottom: 1.75rem;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(212, 175, 120, 0.12);
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--gold);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.panelHeader h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.08rem;
+  font-weight: 600;
+  font-family: var(--font-display), Georgia, serif;
+  letter-spacing: 0.02em;
+  color: #ebe4d8;
+}
+
+.panelHeader p {
+  margin: 0 0 1.15rem;
+  color: var(--muted);
+  font-size: 0.93rem;
+  line-height: 1.55;
+}
+
+.panel {
+  background: var(--panel);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 18px;
+  padding: 1.5rem 1.45rem;
+  border: 1px solid var(--panel-border);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 28px 64px rgba(0, 0, 0, 0.45);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-bottom: 1.15rem;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 11px;
+  padding: 0.72rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  letter-spacing: 0.02em;
+  transition: transform 140ms ease, opacity 140ms ease, box-shadow 140ms ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.22) inset,
+    0 10px 28px var(--ring);
+}
+
+button.primary:hover:not(:disabled) {
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.28) inset,
+    0 12px 32px rgba(212, 175, 120, 0.42);
+}
+
+button.primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+button.danger {
+  background: transparent;
+  color: #e8b4b4;
+  border: 1px solid var(--danger-soft);
+  box-shadow: none;
+}
+
+button.danger:hover:not(:disabled) {
+  background: var(--danger-soft);
+  border-color: rgba(196, 92, 92, 0.45);
+}
+
+button.danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+pre.log {
+  margin: 0;
+  padding: 1.1rem 1.05rem;
+  background: var(--log-bg);
+  border: 1px solid var(--log-border);
+  border-radius: 12px;
+  font-size: 0.8rem;
+  color: var(--log-text);
+  line-height: 1.58;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, "Cascadia Code", "SF Mono", Menlo, monospace;
+}
+
+.error {
+  color: #f0b4b4;
+  margin: 0.35rem 0 0.95rem;
+  font-size: 0.9rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  background: var(--danger-soft);
+  border: 1px solid rgba(196, 92, 92, 0.28);
+}
+
+code {
+  font-size: 0.88em;
+  padding: 0.12em 0.38em;
+  border-radius: 6px;
+  background: rgba(212, 175, 120, 0.1);
+  border: 1px solid rgba(212, 175, 120, 0.15);
+  color: #e8dcc8;
+}
