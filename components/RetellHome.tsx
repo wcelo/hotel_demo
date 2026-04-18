@@ -12,6 +12,41 @@ function mapServiceError(): string {
   return "We could not start the voice session. Please check your connection and try again.";
 }
 
+/** Retell `update` payloads may send `transcript` as a string or structured object — React cannot render objects. */
+function transcriptToDisplayText(transcript: unknown): string {
+  if (transcript == null) return "";
+  if (typeof transcript === "string") return transcript;
+  if (Array.isArray(transcript)) {
+    return transcript
+      .map((item) => transcriptToDisplayText(item))
+      .filter(Boolean)
+      .join("\n");
+  }
+  if (typeof transcript === "object") {
+    const o = transcript as Record<string, unknown>;
+    if (typeof o.content === "string") return o.content;
+    if (typeof o.text === "string") return o.text;
+    if (typeof o.message === "string") return o.message;
+    if (typeof o.transcript === "string") return o.transcript;
+    const role = typeof o.role === "string" ? o.role : "";
+    const line =
+      typeof o.content === "string"
+        ? o.content
+        : typeof o.text === "string"
+          ? o.text
+          : "";
+    if (role && line) return `${role}: ${line}`;
+    if (line) return line;
+    if (role) return role;
+    try {
+      return JSON.stringify(o);
+    } catch {
+      return "";
+    }
+  }
+  return String(transcript);
+}
+
 export default function RetellHome() {
   const clientRef = useRef<RetellWebClient | null>(null);
   const transcriptRef = useRef("");
@@ -35,10 +70,13 @@ export default function RetellHome() {
       setPhase("ended");
       setCaption("");
     });
-    c.on("update", (u: { transcript?: string }) => {
-      if (u?.transcript) {
-        transcriptRef.current = u.transcript;
-        setCaption(u.transcript);
+    c.on("update", (u: unknown) => {
+      if (!u || typeof u !== "object") return;
+      const raw = (u as Record<string, unknown>).transcript;
+      const text = transcriptToDisplayText(raw);
+      if (text) {
+        transcriptRef.current = text;
+        setCaption(text);
       }
     });
     c.on("error", () => {
