@@ -88,19 +88,19 @@ export default function Home() {
   return (
     <main>
       <section className="hero">
-        <p className="eyebrow">Railway-ready demo</p>
-        <h1>Hotel Voice Concierge</h1>
+        <p className="eyebrow">Antigua, Guatemala</p>
+        <h1>AI Receptionist for Antigua Hotel</h1>
         <p className="lead">
-          This page creates a secure Retell web call token on the server, then
-          starts the browser call with the SDK. Configure your Railway Variables
-          first using values in <code>env.example</code>.
+          Meet the AI receptionist experience for Antigua, Guatemala. This demo
+          simulates real guest conversations, from room requests to local
+          recommendations and front-desk support.
         </p>
       </section>
 
       <div className="panel">
         <div className="panelHeader">
-          <h2>Call Controls</h2>
-          <p>Start a conversation and monitor real-time events below.</p>
+          <h2>AI Receptionist Call Demo</h2>
+          <p>Start a call to preview how guests would interact with your hotel receptionist.</p>
         </div>
 
         <div className="row">
@@ -124,7 +124,9 @@ export default function Home() {
 
         {lastError ? <div className="error">{lastError}</div> : null}
 
-        <pre className="log">{logs.length ? logs.join("\n") : "No events yet."}</pre>
+        <pre className="log">
+          {logs.length ? logs.join("\n") : "Conversation activity will appear here."}
+        </pre>
       </div>
     </main>
   );
