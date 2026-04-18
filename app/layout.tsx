@@ -2,8 +2,17 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, DM_Sans } from "next/font/google";
 import "./globals.css";
 
-const siteUrl =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://your-app-name.up.railway.app";
+function metadataBaseUrl(): URL {
+  const raw = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (raw) {
+    try {
+      return new URL(raw);
+    } catch {
+      /* invalid env */
+    }
+  }
+  return new URL("https://example.com");
+}
 
 const fontDisplay = Cormorant_Garamond({
   subsets: ["latin"],
@@ -20,7 +29,7 @@ const fontSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: metadataBaseUrl(),
   title: "MESON PANZA VERDE — AI Receptionist",
   description:
     "Voice concierge preview for MESON PANZA VERDE in Antigua, Guatemala.",

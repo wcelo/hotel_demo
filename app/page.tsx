@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RetellWebClient } from "retell-client-js-sdk";
+import type { RetellWebClient } from "retell-client-js-sdk";
 
 const HOTEL_NAME = "MESON PANZA VERDE";
 const HOTEL_LOCATION = "Antigua, Guatemala";
@@ -22,32 +22,32 @@ export default function Home() {
   const [caption, setCaption] = useState("");
   const [lastError, setLastError] = useState<string | null>(null);
 
-  const getClient = useCallback(() => {
-    if (!clientRef.current) {
-      clientRef.current = new RetellWebClient();
-      const c = clientRef.current;
-      c.on("call_started", () => {
-        setActive(true);
-        setPhase("live");
-      });
-      c.on("call_ended", () => {
-        setActive(false);
-        setPhase("ended");
-        setCaption("");
-      });
-      c.on("update", (u: { transcript?: string }) => {
-        if (u?.transcript) {
-          transcriptRef.current = u.transcript;
-          setCaption(u.transcript);
-        }
-      });
-      c.on("error", () => {
-        setLastError(mapServiceError());
-        setActive(false);
-        setPhase("idle");
-      });
-    }
-    return clientRef.current;
+  const ensureClient = useCallback(async () => {
+    if (clientRef.current) return clientRef.current;
+    const { RetellWebClient: Client } = await import("retell-client-js-sdk");
+    const c = new Client();
+    c.on("call_started", () => {
+      setActive(true);
+      setPhase("live");
+    });
+    c.on("call_ended", () => {
+      setActive(false);
+      setPhase("ended");
+      setCaption("");
+    });
+    c.on("update", (u: { transcript?: string }) => {
+      if (u?.transcript) {
+        transcriptRef.current = u.transcript;
+        setCaption(u.transcript);
+      }
+    });
+    c.on("error", () => {
+      setLastError(mapServiceError());
+      setActive(false);
+      setPhase("idle");
+    });
+    clientRef.current = c;
+    return c;
   }, []);
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export default function Home() {
       if (!res.ok || !data.session_token) {
         throw new Error(data.error || "session_failed");
       }
-      const client = getClient();
+      const client = await ensureClient();
       await client.startCall({ accessToken: data.session_token });
     } catch {
       setLastError(mapServiceError());
@@ -83,7 +83,7 @@ export default function Home() {
   }
 
   function stopCall() {
-    getClient().stopCall();
+    clientRef.current?.stopCall();
     setActive(false);
     setPhase("ended");
     setCaption("");
