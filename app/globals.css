@@ -194,6 +194,10 @@ button.danger:disabled {
   color: #e8dcc8;
 }
 
+.voicePill--idle {
+  opacity: 0.95;
+}
+
 .voicePill--connecting {
   border-color: rgba(212, 175, 120, 0.45);
   color: var(--gold);
