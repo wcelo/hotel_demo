@@ -1,10 +1,12 @@
 const express = require("express");
 const next = require("next");
+const { parse } = require("url");
 const Retell = require("retell-sdk").default;
 const store = require("./lib/callAnalyzedStore.cjs");
 
 const dev = process.env.NODE_ENV !== "production";
-const hostname = process.env.HOSTNAME || "0.0.0.0";
+// Railway sets HOSTNAME to the container id — do NOT use it as the bind address or the proxy gets 502.
+const listenHost = "0.0.0.0";
 const port = parseInt(process.env.PORT || "3000", 10);
 
 const nextApp = next({ dev });
@@ -46,9 +48,12 @@ nextApp.prepare().then(() => {
     res.json({ entries: store.getRows() });
   });
 
-  server.use((req, res) => handle(req, res));
+  server.use((req, res) => {
+    const parsedUrl = parse(req.url || "/", true);
+    return handle(req, res, parsedUrl);
+  });
 
-  server.listen(port, hostname, () => {
-    console.log(`> Ready on http://${hostname}:${port}`);
+  server.listen(port, listenHost, () => {
+    console.log(`> Ready on http://${listenHost}:${port}`);
   });
 });
