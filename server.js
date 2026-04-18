@@ -32,7 +32,9 @@ nextApp.prepare().then(() => {
         }
 
         const payload = JSON.parse(rawBody);
-        if (payload.event_type === "call_analyzed" && payload.call) {
+        // Retell sends `event` in the official payload; some docs mention `event_type` — accept both.
+        const ev = payload.event ?? payload.event_type;
+        if (ev === "call_analyzed" && payload.call) {
           store.addFromCallAnalyzed(payload.call);
         }
 
