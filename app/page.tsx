@@ -3,18 +3,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { RetellWebClient } from "retell-client-js-sdk";
 
-type LogLine = string;
+const HOTEL_NAME = "MESON PANZA VERDE";
+const HOTEL_LOCATION = "Antigua, Guatemala";
+
+type VoicePhase = "idle" | "connecting" | "live" | "ended";
+
+function mapServiceError(): string {
+  return "We could not start the voice session. Please check your connection and try again.";
+}
 
 export default function Home() {
   const clientRef = useRef<RetellWebClient | null>(null);
+  const transcriptRef = useRef("");
+
+  const [phase, setPhase] = useState<VoicePhase>("idle");
   const [busy, setBusy] = useState(false);
   const [active, setActive] = useState(false);
-  const [logs, setLogs] = useState<LogLine[]>([]);
+  const [caption, setCaption] = useState("");
   const [lastError, setLastError] = useState<string | null>(null);
-
-  const append = useCallback((line: string) => {
-    setLogs((prev) => [...prev.slice(-80), `[${new Date().toISOString()}] ${line}`]);
-  }, []);
 
   const getClient = useCallback(() => {
     if (!clientRef.current) {
@@ -22,25 +28,27 @@ export default function Home() {
       const c = clientRef.current;
       c.on("call_started", () => {
         setActive(true);
-        append("event: call_started");
+        setPhase("live");
       });
       c.on("call_ended", () => {
         setActive(false);
-        append("event: call_ended");
+        setPhase("ended");
+        setCaption("");
       });
-      c.on("agent_start_talking", () => append("event: agent_start_talking"));
-      c.on("agent_stop_talking", () => append("event: agent_stop_talking"));
       c.on("update", (u: { transcript?: string }) => {
-        if (u?.transcript) append(`transcript: ${u.transcript}`);
+        if (u?.transcript) {
+          transcriptRef.current = u.transcript;
+          setCaption(u.transcript);
+        }
       });
-      c.on("error", (err: Error) => {
-        append(`error: ${err?.message || String(err)}`);
-        setLastError(err?.message || String(err));
+      c.on("error", () => {
+        setLastError(mapServiceError());
         setActive(false);
+        setPhase("idle");
       });
     }
     return clientRef.current;
-  }, [append]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -51,82 +59,110 @@ export default function Home() {
 
   async function startCall() {
     setLastError(null);
+    setCaption("");
+    transcriptRef.current = "";
     setBusy(true);
-    append("requesting access_token from /api/retell/web-call …");
+    setPhase("connecting");
     try {
-      const res = await fetch("/api/retell/web-call", { method: "POST" });
+      const res = await fetch("/api/voice-session", { method: "POST" });
       const data = (await res.json()) as {
-        access_token?: string;
-        call_id?: string | null;
+        session_token?: string;
         error?: string;
       };
-      if (!res.ok) {
-        throw new Error(data.error || res.statusText);
+      if (!res.ok || !data.session_token) {
+        throw new Error(data.error || "session_failed");
       }
-      if (!data.access_token) {
-        throw new Error("No access_token in response");
-      }
-      append(`got token; call_id=${data.call_id ?? "n/a"} — starting WebRTC …`);
       const client = getClient();
-      await client.startCall({ accessToken: data.access_token });
-      append("startCall() resolved");
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      setLastError(msg);
-      append(`failed: ${msg}`);
+      await client.startCall({ accessToken: data.session_token });
+    } catch {
+      setLastError(mapServiceError());
+      setPhase("idle");
     } finally {
       setBusy(false);
     }
   }
 
   function stopCall() {
-    append("user: stopCall()");
     getClient().stopCall();
     setActive(false);
+    setPhase("ended");
+    setCaption("");
   }
+
+  const statusLabel =
+    phase === "connecting"
+      ? "Connecting"
+      : phase === "live"
+        ? "In conversation"
+        : phase === "ended"
+          ? "Call ended"
+          : "Ready";
 
   return (
     <main>
       <section className="hero">
-        <p className="eyebrow">Antigua, Guatemala</p>
-        <h1>AI Receptionist for Antigua Hotel</h1>
+        <p className="eyebrow">{HOTEL_LOCATION}</p>
+        <h1>AI Receptionist — {HOTEL_NAME}</h1>
         <p className="lead">
-          Meet the AI receptionist experience for Antigua, Guatemala. This demo
-          simulates real guest conversations, from room requests to local
-          recommendations and front-desk support.
+          Welcome to our voice concierge preview for {HOTEL_NAME}. Guests can ask about
+          breakfast, parking, local recommendations, and front-desk requests—handled with
+          the same warmth as our team at the lobby.
         </p>
       </section>
 
       <div className="panel">
         <div className="panelHeader">
-          <h2>AI Receptionist Call Demo</h2>
-          <p>Start a call to preview how guests would interact with your hotel receptionist.</p>
+          <h2>Voice conversation</h2>
+          <p>
+            Start a call to speak with the receptionist. Live captions appear below while
+            you are connected.
+          </p>
         </div>
 
-        <div className="row">
-          <button
-            type="button"
-            className="primary"
-            disabled={busy || active}
-            onClick={() => void startCall()}
-          >
-            {busy ? "Connecting..." : "Start Call"}
-          </button>
-          <button
-            type="button"
-            className="danger"
-            disabled={!active}
-            onClick={stopCall}
-          >
-            End Call
-          </button>
+        <div className="voiceShell">
+          <div className="voiceStatusRow">
+            <span className={`voicePill voicePill--${phase}`}>{statusLabel}</span>
+            {active ? <span className="voiceHint">Speak naturally—this is a demo.</span> : null}
+          </div>
+
+          <div className={`voiceOrb ${active ? "voiceOrb--live" : ""}`} aria-hidden>
+            <span className="voiceOrbRing" />
+            <span className="voiceOrbCore" />
+            <span className="voiceOrbRing voiceOrbRing--delay" />
+          </div>
+
+          <div className="voiceCaptions" aria-live="polite">
+            {caption ? (
+              <p className="voiceCaptionText">{caption}</p>
+            ) : (
+              <p className="voiceCaptionPlaceholder">
+                {phase === "connecting"
+                  ? "Preparing your session…"
+                  : phase === "live"
+                    ? "Listening… captions will appear here."
+                    : phase === "ended"
+                      ? "Session closed."
+                      : "Captions will appear when the call is active."}
+              </p>
+            )}
+          </div>
+
+          <div className="row voiceActions">
+            <button
+              type="button"
+              className="primary"
+              disabled={busy || active}
+              onClick={() => void startCall()}
+            >
+              {busy ? "Connecting…" : "Start call"}
+            </button>
+            <button type="button" className="danger" disabled={!active} onClick={stopCall}>
+              End call
+            </button>
+          </div>
+
+          {lastError ? <div className="error">{lastError}</div> : null}
         </div>
-
-        {lastError ? <div className="error">{lastError}</div> : null}
-
-        <pre className="log">
-          {logs.length ? logs.join("\n") : "Conversation activity will appear here."}
-        </pre>
       </div>
     </main>
   );

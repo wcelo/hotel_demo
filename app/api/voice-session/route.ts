@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const RETELL_API = "https://api.retellai.com/v2/create-web-call";
+const UPSTREAM_CREATE_SESSION = "https://api.retellai.com/v2/create-web-call";
 
 export async function POST(request: Request) {
   const apiKey = process.env.RETELL_API_KEY;
@@ -8,10 +8,7 @@ export async function POST(request: Request) {
 
   if (!apiKey || !defaultAgentId) {
     return NextResponse.json(
-      {
-        error:
-          "Server missing RETELL_API_KEY or RETELL_AGENT_ID. Set them in Railway Variables.",
-      },
+      { error: "service_misconfigured" },
       { status: 500 },
     );
   }
@@ -30,7 +27,7 @@ export async function POST(request: Request) {
     // use default
   }
 
-  const res = await fetch(RETELL_API, {
+  const res = await fetch(UPSTREAM_CREATE_SESSION, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -42,8 +39,8 @@ export async function POST(request: Request) {
   const text = await res.text();
   if (!res.ok) {
     return NextResponse.json(
-      { error: text || res.statusText },
-      { status: res.status },
+      { error: "session_create_failed" },
+      { status: res.status >= 500 ? 502 : res.status },
     );
   }
 
@@ -51,21 +48,15 @@ export async function POST(request: Request) {
   try {
     data = JSON.parse(text) as typeof data;
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON from Retell API" },
-      { status: 502 },
-    );
+    return NextResponse.json({ error: "session_create_failed" }, { status: 502 });
   }
 
   if (!data.access_token) {
-    return NextResponse.json(
-      { error: "Retell response missing access_token" },
-      { status: 502 },
-    );
+    return NextResponse.json({ error: "session_create_failed" }, { status: 502 });
   }
 
   return NextResponse.json({
-    access_token: data.access_token,
+    session_token: data.access_token,
     call_id: data.call_id ?? null,
   });
 }

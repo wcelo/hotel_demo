@@ -21,8 +21,9 @@ const fontSans = DM_Sans({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Hotel Voice Concierge Demo",
-  description: "A clean Retell Web Call demo for Railway deployment",
+  title: "MESON PANZA VERDE — AI Receptionist",
+  description:
+    "Voice concierge preview for MESON PANZA VERDE in Antigua, Guatemala.",
 };
 
 export default function RootLayout({
