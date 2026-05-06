@@ -21,8 +21,16 @@ type ReservationEntry = {
   bokingTime: string;
   adultCount: string;
   childCount: string;
-  weddingTableCount: string;
+  specialRequests: string;
 };
+
+function csvEscape(v: string) {
+  const s = v ?? "";
+  if (s.includes('"') || s.includes(",") || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
 
 function formatTime(iso: string) {
   try {
@@ -46,6 +54,45 @@ export default function DashboardPage() {
   const [view, setView] = useState<"summaries" | "reservations">("reservations");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  function exportReservationsCsv() {
+    const header = [
+      "time",
+      "guest_name",
+      "guest_phone",
+      "guest_title",
+      "selected_restaurant_name",
+      "boking_date",
+      "boking_time",
+      "adult_count",
+      "child_count",
+      "special_requests",
+    ];
+    const rows = reservations.map((r) => [
+      r.timeIso || "",
+      r.guestName || "",
+      r.guestPhone || "",
+      r.guestTitle || "",
+      r.selectedRestaurantName || "",
+      r.bokingDate || "",
+      r.bokingTime || "",
+      r.adultCount || "",
+      r.childCount || "",
+      r.specialRequests || "",
+    ]);
+    const csv = [header, ...rows]
+      .map((line) => line.map((cell) => csvEscape(cell)).join(","))
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `reservations-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
 
   const load = useCallback(async () => {
     try {
@@ -104,6 +151,16 @@ export default function DashboardPage() {
             <option value="reservations">Reservations</option>
             <option value="summaries">Call summaries</option>
           </select>
+          {view === "reservations" ? (
+            <button
+              type="button"
+              className="primary"
+              onClick={exportReservationsCsv}
+              style={{ marginLeft: "0.75rem" }}
+            >
+              Export CSV
+            </button>
+          ) : null}
         </div>
 
         {error ? <div className="error">{error}</div> : null}
@@ -150,7 +207,7 @@ export default function DashboardPage() {
                     <th scope="col">boking_time</th>
                     <th scope="col">adult_count</th>
                     <th scope="col">child_count</th>
-                    <th scope="col">wedding_table_count</th>
+                    <th scope="col">special_requests</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -172,7 +229,7 @@ export default function DashboardPage() {
                         <td>{r.bokingTime || ""}</td>
                         <td>{r.adultCount || ""}</td>
                         <td>{r.childCount || ""}</td>
-                        <td>{r.weddingTableCount || ""}</td>
+                        <td>{r.specialRequests || ""}</td>
                       </tr>
                     ))
                   )}
