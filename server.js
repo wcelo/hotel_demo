@@ -70,6 +70,32 @@ nextApp.prepare().then(() => {
     res.json({ entries: reservationStore.getRows() });
   });
 
+  server.delete("/api/dashboard/reset", (req, res) => {
+    try {
+      const expected = process.env.DASHBOARD_RESET_TOKEN;
+      const isProd = process.env.NODE_ENV === "production";
+      if (isProd) {
+        if (!expected) {
+          return res.status(501).json({ ok: false, error: "reset_disabled" });
+        }
+        const auth = req.headers.authorization;
+        const bearer =
+          typeof auth === "string" && auth.startsWith("Bearer ")
+            ? auth.slice("Bearer ".length).trim()
+            : "";
+        if (bearer !== expected) {
+          return res.status(401).json({ ok: false, error: "unauthorized" });
+        }
+      }
+      store.clearRows();
+      reservationStore.clearRows();
+      return res.json({ ok: true });
+    } catch (e) {
+      console.error("[dashboard/reset]", e);
+      return res.status(500).json({ ok: false });
+    }
+  });
+
   server.use((req, res) => {
     const parsedUrl = parse(req.url || "/", true);
     return handle(req, res, parsedUrl);

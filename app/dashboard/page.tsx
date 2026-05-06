@@ -17,12 +17,14 @@ type ReservationEntry = {
   guestPhone: string;
   guestTitle: string;
   selectedRestaurantName: string;
-  bokingDate: string;
-  bokingTime: string;
+  bookingDate: string;
+  bookingTime: string;
   adultCount: string;
   childCount: string;
   specialRequests: string;
 };
+
+const showClearButton = process.env.NEXT_PUBLIC_DASHBOARD_CLEAR === "true";
 
 function csvEscape(v: string) {
   const s = v ?? "";
@@ -53,6 +55,7 @@ export default function DashboardPage() {
   const [reservations, setReservations] = useState<ReservationEntry[]>([]);
   const [view, setView] = useState<"summaries" | "reservations">("reservations");
   const [loading, setLoading] = useState(true);
+  const [clearing, setClearing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function exportReservationsCsv() {
@@ -62,8 +65,8 @@ export default function DashboardPage() {
       "guest_phone",
       "guest_title",
       "selected_restaurant_name",
-      "boking_date",
-      "boking_time",
+      "booking_date",
+      "booking_time",
       "adult_count",
       "child_count",
       "special_requests",
@@ -74,8 +77,8 @@ export default function DashboardPage() {
       r.guestPhone || "",
       r.guestTitle || "",
       r.selectedRestaurantName || "",
-      r.bokingDate || "",
-      r.bokingTime || "",
+      r.bookingDate || "",
+      r.bookingTime || "",
       r.adultCount || "",
       r.childCount || "",
       r.specialRequests || "",
@@ -92,6 +95,37 @@ export default function DashboardPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  }
+
+  async function clearDemoData() {
+    const ok = window.confirm("Clear all dashboard demo data? This cannot be undone.");
+    if (!ok) return;
+    setClearing(true);
+    try {
+      const headers: Record<string, string> = {};
+      if (process.env.NODE_ENV === "production") {
+        const token = window.prompt(
+          "Enter dashboard reset token (set DASHBOARD_RESET_TOKEN on the server).",
+        );
+        if (token == null) {
+          setClearing(false);
+          return;
+        }
+        if (!token.trim()) {
+          setError("Reset token is required in production.");
+          setClearing(false);
+          return;
+        }
+        headers.Authorization = `Bearer ${token.trim()}`;
+      }
+      const res = await fetch("/api/dashboard/reset", { method: "DELETE", headers });
+      if (!res.ok) throw new Error("reset_failed");
+      await load();
+    } catch {
+      setError("Could not clear data.");
+    } finally {
+      setClearing(false);
+    }
   }
 
   const load = useCallback(async () => {
@@ -152,14 +186,27 @@ export default function DashboardPage() {
             <option value="summaries">Call summaries</option>
           </select>
           {view === "reservations" ? (
-            <button
-              type="button"
-              className="primary"
-              onClick={exportReservationsCsv}
-              style={{ marginLeft: "0.75rem" }}
-            >
-              Export CSV
-            </button>
+            <>
+              <button
+                type="button"
+                className="primary"
+                onClick={exportReservationsCsv}
+                style={{ marginLeft: "0.75rem" }}
+              >
+                Export CSV
+              </button>
+              {showClearButton ? (
+                <button
+                  type="button"
+                  className="danger"
+                  disabled={clearing}
+                  onClick={() => void clearDemoData()}
+                  style={{ marginLeft: "0.5rem" }}
+                >
+                  {clearing ? "Clearing..." : "Clear all"}
+                </button>
+              ) : null}
+            </>
           ) : null}
         </div>
 
@@ -203,8 +250,8 @@ export default function DashboardPage() {
                     <th scope="col">guest_phone</th>
                     <th scope="col">guest_title</th>
                     <th scope="col">selected_restaurant_name</th>
-                    <th scope="col">boking_date</th>
-                    <th scope="col">boking_time</th>
+                    <th scope="col">booking_date</th>
+                    <th scope="col">booking_time</th>
                     <th scope="col">adult_count</th>
                     <th scope="col">child_count</th>
                     <th scope="col">special_requests</th>
@@ -225,8 +272,8 @@ export default function DashboardPage() {
                         <td>{r.guestPhone || ""}</td>
                         <td>{r.guestTitle || ""}</td>
                         <td>{r.selectedRestaurantName || ""}</td>
-                        <td>{r.bokingDate || ""}</td>
-                        <td>{r.bokingTime || ""}</td>
+                        <td>{r.bookingDate || ""}</td>
+                        <td>{r.bookingTime || ""}</td>
                         <td>{r.adultCount || ""}</td>
                         <td>{r.childCount || ""}</td>
                         <td>{r.specialRequests || ""}</td>
