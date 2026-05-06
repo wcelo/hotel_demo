@@ -3,6 +3,7 @@ const next = require("next");
 const { parse } = require("url");
 const Retell = require("retell-sdk").default;
 const store = require("./lib/callAnalyzedStore.cjs");
+const reservationStore = require("./lib/reservationStore.cjs");
 
 const dev = process.env.NODE_ENV !== "production";
 // Railway sets HOSTNAME to the container id — do NOT use it as the bind address or the proxy gets 502.
@@ -48,6 +49,25 @@ nextApp.prepare().then(() => {
 
   server.get("/api/call-summaries", (_req, res) => {
     res.json({ entries: store.getRows() });
+  });
+
+  // Mock reservation ingestion endpoint for Retell Custom Function.
+  // Accepts either direct args body or { args: { ... } } wrapper.
+  server.post("/api/reservations/mock", express.json(), (req, res) => {
+    try {
+      const body = req.body && typeof req.body === "object" ? req.body : {};
+      const payload =
+        body && typeof body.args === "object" && body.args !== null ? body.args : body;
+      reservationStore.addFromExtract(payload);
+      return res.status(201).json({ ok: true });
+    } catch (e) {
+      console.error("[reservations/mock]", e);
+      return res.status(400).json({ ok: false, error: "invalid_payload" });
+    }
+  });
+
+  server.get("/api/reservations", (_req, res) => {
+    res.json({ entries: reservationStore.getRows() });
   });
 
   server.use((req, res) => {
